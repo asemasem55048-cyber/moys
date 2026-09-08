@@ -30,24 +30,78 @@ jobs:
       - name: Create Flutter Android project
         run: |
           rm -rf /tmp/flutter_project
+
           flutter create \
             --platforms android \
             --org com.mouse \
             --project-name mouse_app \
             /tmp/flutter_project
 
-      - name: Copy project files
+      - name: Prepare project
         run: |
           cp pubspec.yaml /tmp/flutter_project/pubspec.yaml
 
           rm -rf /tmp/flutter_project/lib
           cp -r lib /tmp/flutter_project/lib
 
-          rsync -a --delete android/app/src/main/ /tmp/flutter_project/android/app/src/main/
-          cp android/app/build.gradle /tmp/flutter_project/android/app/build.gradle
-          cp android/build.gradle /tmp/flutter_project/android/build.gradle
-          cp android/settings.gradle /tmp/flutter_project/android/settings.gradle
-          cp android/gradle.properties /tmp/flutter_project/android/gradle.properties
+          rm -f /tmp/flutter_project/android/app/build.gradle.kts
+          rm -f /tmp/flutter_project/android/build.gradle.kts
+
+          rsync -a --delete \
+            android/app/src/main/ \
+            /tmp/flutter_project/android/app/src/main/
+
+          cp android/app/build.gradle \
+            /tmp/flutter_project/android/app/build.gradle
+
+          cp android/build.gradle \
+            /tmp/flutter_project/android/build.gradle
+
+          cp android/settings.gradle \
+            /tmp/flutter_project/android/settings.gradle
+
+          cp android/gradle.properties \
+            /tmp/flutter_project/android/gradle.properties
+
+      - name: Force Java and Kotlin 17
+        working-directory: /tmp/flutter_project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+
+          s = s.replace(
+              'sourceCompatibility JavaVersion.VERSION_17',
+              'sourceCompatibility JavaVersion.VERSION_17'
+          )
+
+          s = s.replace(
+              'targetCompatibility JavaVersion.VERSION_17',
+              'targetCompatibility JavaVersion.VERSION_17'
+          )
+
+          if 'tasks.withType(JavaCompile).configureEach' not in s:
+              s += '''
+
+          tasks.withType(JavaCompile).configureEach {
+              sourceCompatibility = "17"
+              targetCompatibility = "17"
+          }
+
+          tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          '''
+
+          p.write_text(s)
+          PY
+
+          echo "=== FINAL BUILD.GRADLE ==="
+          cat android/app/build.gradle
 
       - name: Get dependencies
         working-directory: /tmp/flutter_project
@@ -55,9 +109,10 @@ jobs:
 
       - name: Build APK
         working-directory: /tmp/flutter_project
-        run: flutter build apk --release -v
+        run: flutter build apk --release
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: mouse-app-release
