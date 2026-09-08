@@ -1,4 +1,4 @@
-name: Build Single Dart APK
+name: Build Floating Mouse APK
 
 on:
   push:
@@ -13,6 +13,12 @@ jobs:
         with:
           flutter-version: '3.x'
       - run: flutter create . --org com.example --project-name moys --empty
+      - run: |
+          # إضافة صلاحية الظهور فوق التطبيقات في ملف الأنرويد الأساسي
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            sed -i '/<application/i <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>' "$MANIFEST"
+          fi
       - run: mkdir -p lib && mv main.dart lib/main.dart
       - run: flutter pub get
       - run: flutter build apk --release
