@@ -21,7 +21,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Flutter Android project
+      - name: Create Flutter Android project
         run: |
           mkdir /tmp/flutter_project
           flutter create \
@@ -30,11 +30,13 @@ jobs:
             --project-name mouse_app \
             /tmp/flutter_project
 
-      - name: Copy Mouse project files
+      - name: Copy project files
         run: |
           cp pubspec.yaml /tmp/flutter_project/pubspec.yaml
+          rm -rf /tmp/flutter_project/lib
           cp -r lib /tmp/flutter_project/lib
-          cp -r android/app/src/main /tmp/flutter_project/android/app/src/main
+
+          rsync -a android/app/src/main/ /tmp/flutter_project/android/app/src/main/
           cp android/app/build.gradle /tmp/flutter_project/android/app/build.gradle
           cp android/build.gradle /tmp/flutter_project/android/build.gradle
           cp android/settings.gradle /tmp/flutter_project/android/settings.gradle
