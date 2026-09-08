@@ -21,14 +21,35 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Generate Flutter Android project
+        run: |
+          mkdir /tmp/flutter_project
+          flutter create \
+            --platforms android \
+            --org com.mouse \
+            --project-name mouse_app \
+            /tmp/flutter_project
+
+      - name: Copy Mouse project files
+        run: |
+          cp pubspec.yaml /tmp/flutter_project/pubspec.yaml
+          cp -r lib /tmp/flutter_project/lib
+          cp -r android/app/src/main /tmp/flutter_project/android/app/src/main
+          cp android/app/build.gradle /tmp/flutter_project/android/app/build.gradle
+          cp android/build.gradle /tmp/flutter_project/android/build.gradle
+          cp android/settings.gradle /tmp/flutter_project/android/settings.gradle
+          cp android/gradle.properties /tmp/flutter_project/android/gradle.properties
+
       - name: Get dependencies
+        working-directory: /tmp/flutter_project
         run: flutter pub get
 
       - name: Build APK
+        working-directory: /tmp/flutter_project
         run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: mouse-app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: /tmp/flutter_project/build/app/outputs/flutter-apk/app-release.apk
