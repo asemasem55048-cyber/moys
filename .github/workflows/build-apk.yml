@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -53,23 +53,12 @@ jobs:
         working-directory: /tmp/flutter_project
         run: flutter pub get
 
-      - name: Build APK - Detailed Log
+      - name: Build APK
         working-directory: /tmp/flutter_project
-        run: |
-          flutter clean
-          flutter pub get
-          ./gradlew assembleRelease --stacktrace --info --no-daemon
-
-      - name: Check APK
-        if: always()
-        run: |
-          echo "=== APK FILES ==="
-          find /tmp/flutter_project/build -name "*.apk" -type f -print || true
+        run: flutter build apk --release -v
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: mouse-app-release
           path: /tmp/flutter_project/build/app/outputs/flutter-apk/app-release.apk
-          
